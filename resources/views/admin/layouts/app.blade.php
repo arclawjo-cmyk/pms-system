@@ -30,9 +30,9 @@
     ></div>
 
     <aside
-        class="fixed top-0 left-0 z-50 h-screen w-64 bg-white border-r border-gray-200 transition-transform duration-300 lg:translate-x-0"
-        :class="sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'"
-    >
+    class="fixed top-0 left-0 z-50 h-[100dvh] w-64 bg-white border-r border-gray-200 transition-transform duration-300 lg:translate-x-0 flex flex-col"
+    :class="sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'"
+>
         <div class="h-16 px-4 border-b border-gray-200 flex items-center justify-between">
             <div class="flex items-center gap-3">
                 <div class="h-9 w-9 rounded-full bg-blue-100 flex items-center justify-center">
@@ -58,8 +58,8 @@
             </button>
         </div>
 
-        <div class="px-3 py-4 overflow-y-auto h-[calc(100vh-4rem)]">
-            <nav class="space-y-1">
+        <div class="px-3 py-4 overflow-y-auto h-[calc(100vh-4rem)] flex flex-col">
+            <nav class="space-y-1 flex-1">
                 <a
                     href="{{ route('admin.dashboard') }}"
                     class="group flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition
@@ -90,7 +90,7 @@
                     <svg class="w-5 h-5 {{ request()->routeIs('admin.devices.*') ? 'text-blue-600' : 'text-gray-500 group-hover:text-gray-700' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M20 7l-8-4-8 4m16 0v10l-8 4m8-14l-8 4m0 10L4 17V7m8 4L4 7m8 4l8-4"/>
                     </svg>
-                    <span>Device Manager</span>
+                    <span>Equipment Manager</span>
                 </a>
 
                 <a
@@ -105,7 +105,7 @@
                 </a>
             </nav>
 
-            <div class="mt-6 border-t border-gray-200 pt-4">
+            <div class="mt-6 border-t border-gray-200 pt-4 space-y-4">
                 <form method="POST" action="{{ route('logout') }}">
                     @csrf
                     <button
@@ -117,6 +117,17 @@
                         <span>Logout</span>
                     </button>
                 </form>
+
+                <div class="rounded-xl bg-gray-50 border border-gray-200 px-3 py-3">
+                    
+                    <div class="mt-1 text-sm font-semibold text-gray-900 truncate">
+                        Prince De Quiros
+                    </div>
+
+                    <div class="text-xs text-gray-500 truncate">
+                        princedequiros@gmail.com
+                    </div>
+                </div>
             </div>
         </div>
     </aside>

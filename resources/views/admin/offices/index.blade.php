@@ -188,7 +188,7 @@
     <x-modal show="editOpen" title="Edit Office">
         <form
             method="POST"
-            :action="`{{ url('/admin/colleges/' . $college->id . '/offices') }}/${editOffice.id}`"
+            :action="`{{ url('/colleges/' . $college->id . '/offices') }}/${editOffice.id}`"
             class="space-y-3"
         >
             @csrf
@@ -226,7 +226,7 @@
 
             <form
                 method="POST"
-                :action="`{{ url('/admin/colleges/' . $college->id . '/offices') }}/${deleteOfficeId}`"
+                :action="`{{ url('/colleges/' . $college->id . '/offices') }}/${deleteOfficeId}`"
                 class="flex gap-2"
             >
                 @csrf

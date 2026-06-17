@@ -3,170 +3,488 @@
 @section('title', 'Device Details')
 @section('page_title', 'Device Details')
 
-@section('breadcrumb')
-    <a class="text-blue-700 hover:underline" href="{{ route('admin.devices.index') }}">Device Manager</a>
-    <span class="mx-2">/</span>
-    <span>{{ $device->property_number }}</span>
-@endsection
-
 @section('content')
-<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+@php
+    $deviceTypeName = strtolower($device->type?->name ?? '');
+    $isComputerType = in_array($deviceTypeName, ['desktop', 'laptop']);
+    $deviceUrl = route('admin.devices.show', $device);
+@endphp
 
-    {{-- Device information --}}
-    <div class="lg:col-span-2 bg-white rounded shadow-sm p-6 space-y-6">
-        <div class="flex items-center justify-between">
-            <div>
-                <h1 class="text-2xl font-semibold">{{ $device->property_number }}</h1>
-                <div class="text-sm text-gray-600 mt-1">
-                    {{ $device->type?->name ?? '-' }}
+<div
+    x-data="{
+        editOpen: false,
+        selectedTypeId: '{{ old('device_type_id', $device->device_type_id) }}',
+
+        typeNames: @js(($types ?? collect())->pluck('name', 'id')),
+
+        getTypeName(typeId) {
+            return (this.typeNames[typeId] || '').toLowerCase();
+        },
+
+        isComputerType(typeId = null) {
+            let selected = typeId ?? this.selectedTypeId;
+            let name = this.getTypeName(selected);
+
+            return name === 'desktop' || name === 'laptop';
+        }
+    }"
+    class="grid grid-cols-1 gap-6 lg:grid-cols-3"
+>
+    <div class="lg:col-span-2">
+        <div class="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
+            <div class="flex items-start justify-between gap-4">
+                <div>
+                    <h1 class="text-2xl font-semibold text-gray-900">
+                        {{ $device->property_number }}
+                    </h1>
+
+                    <p class="mt-1 text-gray-500">
+                        {{ $device->type?->name ?? 'Device' }}
+                    </p>
                 </div>
-            </div>
 
-            <div class="flex gap-2">
-                <a href="{{ route('admin.devices.edit', $device) }}"
-                   class="px-4 py-2 rounded bg-blue-600 text-white">
-                    Edit
-                </a>
+                <div class="flex flex-wrap gap-2">
+                    <a
+                        href="{{ route('admin.devices.index') }}"
+                        class="rounded-lg bg-gray-100 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-200"
+                    >
+                        Back
+                    </a>
 
-                <form method="POST" action="{{ route('admin.devices.destroy', $device) }}"
-                      onsubmit="return confirm('Delete this device?')">
-                    @csrf
-                    @method('DELETE')
-                    <button class="px-4 py-2 rounded bg-red-600 text-white">
-                        Delete
+                    <a
+                        href="{{ route('admin.devices.history', $device) }}"
+                        class="rounded-lg bg-purple-600 px-4 py-2 text-sm font-medium text-white hover:bg-purple-700"
+                    >
+                        History
+                    </a>
+
+                    <form
+                        method="POST"
+                        action="{{ route('admin.devices.markChecked', $device) }}"
+                        onsubmit="return confirm('Mark this device as checked/maintained today?')"
+                    >
+                        @csrf
+                        @method('PATCH')
+
+                        <button
+                            type="submit"
+                            class="rounded-lg bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700"
+                        >
+                            Mark as Checked
+                        </button>
+                    </form>
+
+                    <button
+                        type="button"
+                        x-on:click="editOpen = true"
+                        class="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+                    >
+                        Edit
                     </button>
-                </form>
-            </div>
-        </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-            <div>
-                <div class="text-gray-500">Device Type</div>
-                <div class="font-medium">{{ $device->type?->name ?? '-' }}</div>
-            </div>
+                    <form
+                        method="POST"
+                        action="{{ route('admin.devices.destroy', $device) }}"
+                        onsubmit="return confirm('Delete this device?')"
+                    >
+                        @csrf
+                        @method('DELETE')
 
-            <div>
-                <div class="text-gray-500">Property Number</div>
-                <div class="font-medium">{{ $device->property_number }}</div>
-            </div>
-
-            <div>
-                <div class="text-gray-500">Brand</div>
-                <div class="font-medium">{{ $device->brand ?? '-' }}</div>
-            </div>
-
-            <div>
-                <div class="text-gray-500">MAC Address</div>
-                <div class="font-medium">{{ $device->mac_address ?? '-' }}</div>
-            </div>
-
-            <div>
-                <div class="text-gray-500">Unit Price</div>
-                <div class="font-medium">
-                    {{ $device->unit_price !== null ? number_format((float)$device->unit_price, 2) : '-' }}
+                        <button
+                            type="submit"
+                            class="rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700"
+                        >
+                            Delete
+                        </button>
+                    </form>
                 </div>
             </div>
 
-            <div>
-                <div class="text-gray-500">Date Acquired</div>
-                <div class="font-medium">{{ $device->date_acquired ?? '-' }}</div>
-            </div>
+            <div class="mt-8 grid grid-cols-1 gap-6 md:grid-cols-2">
+                <div>
+                    <div class="text-sm text-gray-500">Device Type</div>
+                    <div class="font-medium text-gray-900">
+                        {{ $device->type?->name ?? '-' }}
+                    </div>
+                </div>
 
-            <div>
-                <div class="text-gray-500">Status</div>
-                <div class="font-medium">{{ ucfirst($device->status) }}</div>
-            </div>
-        </div>
+                <div>
+                    <div class="text-sm text-gray-500">Property Number</div>
+                    <div class="font-medium text-gray-900">
+                        {{ $device->property_number }}
+                    </div>
+                </div>
 
-        {{-- Assignment info --}}
-        <div class="border-t pt-4">
-            <h2 class="font-semibold mb-3">Current Assignment</h2>
+                <div>
+                    <div class="text-sm text-gray-500">Serial Number</div>
+                    <div class="font-medium text-gray-900">
+                        {{ $device->serial_number ?: '-' }}
+                    </div>
+                </div>
 
-            @if($device->currentAssignment && $device->currentAssignment->staff)
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                <div>
+                    <div class="text-sm text-gray-500">Brand</div>
+                    <div class="font-medium text-gray-900">
+                        {{ $device->brand ?: '-' }}
+                    </div>
+                </div>
+
+                <div>
+                    <div class="text-sm text-gray-500">Model</div>
+                    <div class="font-medium text-gray-900">
+                        {{ $device->model ?: '-' }}
+                    </div>
+                </div>
+
+                @if($isComputerType)
                     <div>
-                        <div class="text-gray-500">Issued To</div>
-                        <div class="font-medium">
+                        <div class="text-sm text-gray-500">MAC Address</div>
+                        <div class="font-medium text-gray-900">
+                            {{ $device->mac_address ?: '-' }}
+                        </div>
+                    </div>
+
+                    <div>
+                        <div class="text-sm text-gray-500">Operating System</div>
+                        <div class="font-medium text-gray-900">
+                            {{ data_get($device->specs, 'os', '-') ?: '-' }}
+                        </div>
+                    </div>
+
+                    <div>
+                        <div class="text-sm text-gray-500">Memory</div>
+                        <div class="font-medium text-gray-900">
+                            {{ data_get($device->specs, 'memory', '-') ?: '-' }}
+                        </div>
+                    </div>
+
+                    <div>
+                        <div class="text-sm text-gray-500">Storage</div>
+                        <div class="font-medium text-gray-900">
+                            {{ data_get($device->specs, 'storage', '-') ?: '-' }}
+                        </div>
+                    </div>
+
+                    <div>
+                        <div class="text-sm text-gray-500">Form Factor</div>
+                        <div class="font-medium text-gray-900">
+                            {{ data_get($device->specs, 'form_factor', '-') ?: '-' }}
+                        </div>
+                    </div>
+                @endif
+
+                <div>
+                    <div class="text-sm text-gray-500">Unit Price</div>
+                    <div class="font-medium text-gray-900">
+                        {{ $device->unit_price ? number_format($device->unit_price, 2) : '-' }}
+                    </div>
+                </div>
+
+                <div>
+                    <div class="text-sm text-gray-500">Date Acquired</div>
+                    <div class="font-medium text-gray-900">
+                        {{ $device->date_acquired ? $device->date_acquired->format('Y-m-d') : '-' }}
+                    </div>
+                </div>
+
+                <div>
+                    <div class="text-sm text-gray-500">Condition</div>
+                    <div class="font-medium text-gray-900 capitalize">
+                        {{ $device->condition ?? 'serviceable' }}
+                    </div>
+                </div>
+
+                <div>
+                    <div class="text-sm text-gray-500">Last Maintenance</div>
+                    <div class="font-medium text-gray-900">
+                        {{ $device->last_maintenance_date ? $device->last_maintenance_date->format('M d, Y') : 'Not yet checked' }}
+                    </div>
+                </div>
+            </div>
+
+            @if($device->maintenance_remarks)
+                <div class="mt-8 border-t border-gray-200 pt-6">
+                    <h2 class="font-semibold text-gray-900">
+                        Maintenance Remarks
+                    </h2>
+
+                    <p class="mt-3 text-gray-700">
+                        {{ $device->maintenance_remarks }}
+                    </p>
+                </div>
+            @endif
+
+            <div class="mt-8 border-t border-gray-200 pt-6">
+                <h2 class="font-semibold text-gray-900">
+                    Current Assignment
+                </h2>
+
+                @if($device->currentAssignment && $device->currentAssignment->staff)
+                    <div class="mt-3 rounded-xl border border-gray-200 bg-gray-50 p-4">
+                        <div class="font-medium text-gray-900">
                             {{ $device->currentAssignment->staff->last_name }},
                             {{ $device->currentAssignment->staff->first_name }}
                         </div>
-                    </div>
 
-                    <div>
-                        <div class="text-gray-500">Office</div>
-                        <div class="font-medium">
-                            {{ $device->currentAssignment->staff->office->name ?? '-' }}
+                        <div class="mt-1 text-sm text-gray-500">
+                            {{ $device->currentAssignment->staff->office?->name ?? 'No office' }}
+
+                            @if($device->currentAssignment->staff->office?->college)
+                                /
+                                {{ $device->currentAssignment->staff->office->college->name }}
+                            @endif
+                        </div>
+
+                        <div class="mt-1 text-sm text-gray-500">
+                            Issued:
+                            {{ $device->currentAssignment->issued_at ? $device->currentAssignment->issued_at->format('M d, Y h:i A') : '-' }}
                         </div>
                     </div>
+                @else
+                    <p class="mt-3 text-gray-700">
+                        This device is not currently issued.
+                    </p>
+                @endif
+            </div>
 
-                    <div>
-                        <div class="text-gray-500">College</div>
-                        <div class="font-medium">
-                            {{ $device->currentAssignment->staff->office->college->name ?? '-' }}
-                        </div>
-                    </div>
+            @if($device->notes)
+                <div class="mt-8 border-t border-gray-200 pt-6">
+                    <h2 class="font-semibold text-gray-900">
+                        Notes
+                    </h2>
 
-                    <div>
-                        <div class="text-gray-500">Issued At</div>
-                        <div class="font-medium">
-                            {{ optional($device->currentAssignment->issued_at)->format('Y-m-d H:i') }}
-                        </div>
-                    </div>
+                    <p class="mt-3 text-gray-700">
+                        {{ $device->notes }}
+                    </p>
                 </div>
-            @else
-                <div class="text-sm text-gray-600">This device is not currently issued.</div>
             @endif
-        </div>
-
-        {{-- Desktop specs --}}
-        @if(!empty($device->specs))
-            <div class="border-t pt-4">
-                <h2 class="font-semibold mb-3">Specifications</h2>
-
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                    @foreach($device->specs as $key => $value)
-                        <div>
-                            <div class="text-gray-500">
-                                {{ ucfirst(str_replace('_', ' ', $key)) }}
-                            </div>
-                            <div class="font-medium">{{ $value ?: '-' }}</div>
-                        </div>
-                    @endforeach
-                </div>
-            </div>
-        @endif
-
-        <div class="border-t pt-4">
-            <h2 class="font-semibold mb-2">Notes</h2>
-            <div class="text-sm whitespace-pre-line">
-                {{ $device->notes ?: '-' }}
-            </div>
         </div>
     </div>
 
-    {{-- QR code --}}
-    <div class="bg-white rounded shadow-sm p-6">
-        <h2 class="font-semibold mb-4">QR Code</h2>
+    <div>
+        <div class="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
+            <h2 class="font-semibold text-gray-900">
+                QR Code
+            </h2>
 
-        <div class="flex justify-center">
-            {!! QrCode::size(220)->generate(route('admin.devices.show', $device)) !!}
-        </div>
+            <div class="mt-5 flex justify-center">
+                {!! QrCode::size(260)->generate($deviceUrl) !!}
+            </div>
 
-        <div class="mt-4 text-sm text-gray-600 break-all">
-            {{ route('admin.devices.show', $device) }}
-        </div>
+            <p class="mt-4 break-words text-sm text-gray-700">
+                {{ $deviceUrl }}
+            </p>
 
-        <div class="mt-4 text-sm text-gray-700">
-            Scan this QR code to open this device page directly.
-        </div>
+            <p class="mt-4 text-sm text-gray-600">
+                Scan this QR code to open this device page directly.
+            </p>
 
-        <div class="mt-4">
-            <button onclick="window.print()"
-                    class="px-4 py-2 rounded bg-gray-900 text-white">
+            <button
+                type="button"
+                onclick="window.print()"
+                class="mt-5 rounded-lg bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-black"
+            >
                 Print QR
             </button>
         </div>
     </div>
 
+    {{-- EDIT MODAL --}}
+    <x-modal show="editOpen" title="Edit Device">
+        <form method="POST" action="{{ route('admin.devices.update', $device) }}" class="space-y-4">
+            @csrf
+            @method('PUT')
+
+            <input type="hidden" name="status" value="{{ $device->status ?? 'available' }}">
+
+            <div class="grid grid-cols-1 gap-3 md:grid-cols-2">
+                <div>
+                    <label class="text-sm font-medium">Device Type</label>
+                    <select
+                        name="device_type_id"
+                        x-model="selectedTypeId"
+                        class="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2"
+                        required
+                    >
+                        @foreach($types as $type)
+                            <option value="{{ $type->id }}">
+                                {{ $type->name }}
+                            </option>
+                        @endforeach
+                    </select>
+                </div>
+
+                <div>
+                    <label class="text-sm font-medium">Property Number</label>
+                    <input
+                        name="property_number"
+                        value="{{ old('property_number', $device->property_number) }}"
+                        class="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2"
+                        required
+                    >
+                </div>
+
+                <div>
+                    <label class="text-sm font-medium">Serial Number</label>
+                    <input
+                        name="serial_number"
+                        value="{{ old('serial_number', $device->serial_number) }}"
+                        class="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2"
+                        placeholder="Enter serial number"
+                    >
+                </div>
+
+                <div>
+                    <label class="text-sm font-medium">Brand</label>
+                    <input
+                        name="brand"
+                        value="{{ old('brand', $device->brand) }}"
+                        class="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2"
+                    >
+                </div>
+
+                <div>
+                    <label class="text-sm font-medium">Model</label>
+                    <input
+                        name="model"
+                        value="{{ old('model', $device->model) }}"
+                        class="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2"
+                    >
+                </div>
+
+                <div x-show="isComputerType()" x-cloak>
+                    <label class="text-sm font-medium">MAC Address</label>
+                    <input
+                        name="mac_address"
+                        value="{{ old('mac_address', $device->mac_address) }}"
+                        class="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2"
+                        :disabled="!isComputerType()"
+                    >
+                </div>
+
+                <div x-show="isComputerType()" x-cloak>
+                    <label class="text-sm font-medium">Operating System</label>
+                    <input
+                        name="specs[os]"
+                        value="{{ old('specs.os', data_get($device->specs, 'os')) }}"
+                        class="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2"
+                        :disabled="!isComputerType()"
+                    >
+                </div>
+
+                <div x-show="isComputerType()" x-cloak>
+                    <label class="text-sm font-medium">Memory</label>
+                    <input
+                        name="specs[memory]"
+                        value="{{ old('specs.memory', data_get($device->specs, 'memory')) }}"
+                        class="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2"
+                        :disabled="!isComputerType()"
+                    >
+                </div>
+
+                <div x-show="isComputerType()" x-cloak>
+                    <label class="text-sm font-medium">Storage</label>
+                    <input
+                        name="specs[storage]"
+                        value="{{ old('specs.storage', data_get($device->specs, 'storage')) }}"
+                        class="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2"
+                        :disabled="!isComputerType()"
+                    >
+                </div>
+
+                <div x-show="isComputerType()" x-cloak>
+                    <label class="text-sm font-medium">Form Factor</label>
+                    <input
+                        name="specs[form_factor]"
+                        value="{{ old('specs.form_factor', data_get($device->specs, 'form_factor')) }}"
+                        class="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2"
+                        :disabled="!isComputerType()"
+                    >
+                </div>
+
+                <div>
+                    <label class="text-sm font-medium">Unit Price</label>
+                    <input
+                        name="unit_price"
+                        type="number"
+                        step="0.01"
+                        value="{{ old('unit_price', $device->unit_price) }}"
+                        class="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2"
+                    >
+                </div>
+
+                <div>
+                    <label class="text-sm font-medium">Date Acquired</label>
+                    <input
+                        name="date_acquired"
+                        type="date"
+                        value="{{ old('date_acquired', $device->date_acquired ? $device->date_acquired->format('Y-m-d') : '') }}"
+                        class="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2"
+                    >
+                </div>
+
+                <div>
+                    <label class="text-sm font-medium">Condition</label>
+                    <select
+                        name="condition"
+                        class="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2"
+                    >
+                        <option value="serviceable" @selected(old('condition', $device->condition ?? 'serviceable') === 'serviceable')>
+                            Serviceable
+                        </option>
+
+                        <option value="unserviceable" @selected(old('condition', $device->condition) === 'unserviceable')>
+                            Unserviceable
+                        </option>
+                    </select>
+                </div>
+
+                <div>
+                    <label class="text-sm font-medium">Last Maintenance Date</label>
+                    <input
+                        name="last_maintenance_date"
+                        type="date"
+                        value="{{ old('last_maintenance_date', $device->last_maintenance_date ? $device->last_maintenance_date->format('Y-m-d') : '') }}"
+                        class="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2"
+                    >
+                </div>
+            </div>
+
+            <div>
+                <label class="text-sm font-medium">Maintenance Remarks</label>
+                <textarea
+                    name="maintenance_remarks"
+                    rows="3"
+                    class="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2"
+                >{{ old('maintenance_remarks', $device->maintenance_remarks) }}</textarea>
+            </div>
+
+            <div>
+                <label class="text-sm font-medium">Notes</label>
+                <textarea
+                    name="notes"
+                    rows="3"
+                    class="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2"
+                >{{ old('notes', $device->notes) }}</textarea>
+            </div>
+
+            <div class="flex justify-end gap-2 pt-2">
+                <button
+                    type="button"
+                    x-on:click="editOpen = false"
+                    class="rounded-lg bg-gray-100 px-4 py-2 text-gray-700 hover:bg-gray-200"
+                >
+                    Cancel
+                </button>
+
+                <button
+                    type="submit"
+                    class="rounded-lg bg-blue-600 px-4 py-2 text-white hover:bg-blue-700"
+                >
+                    Save Changes
+                </button>
+            </div>
+        </form>
+    </x-modal>
 </div>
 @endsection

@@ -65,6 +65,15 @@
             @endforeach
         </select>
     </div>
+
+    <div>
+        <label class="text-sm font-medium">Last Maintenance Date</label>
+        <input name="last_maintenance_date"
+               type="date"
+               value="{{ old('last_maintenance_date', $editing && $device->last_maintenance_date ? $device->last_maintenance_date->format('Y-m-d') : '') }}"
+               class="mt-1 w-full border rounded px-3 py-2">
+        @error('last_maintenance_date') <div class="text-sm text-red-600 mt-1">{{ $message }}</div> @enderror
+    </div>
 </div>
 
 <div class="mt-6">
@@ -85,6 +94,15 @@
             @endforeach
         </div>
     @endif
+</div>
+
+<div class="mt-6">
+    <label class="text-sm font-medium">Maintenance Remarks</label>
+    <textarea name="maintenance_remarks"
+              class="mt-1 w-full border rounded px-3 py-2"
+              rows="3"
+              placeholder="Example: Cleaned, checked power supply, updated software">{{ old('maintenance_remarks', $editing ? $device->maintenance_remarks : '') }}</textarea>
+    @error('maintenance_remarks') <div class="text-sm text-red-600 mt-1">{{ $message }}</div> @enderror
 </div>
 
 <div class="mt-6">

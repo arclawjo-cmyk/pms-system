@@ -61,14 +61,35 @@
             <h1 class="text-2xl font-semibold text-gray-900">Staff in {{ $office->name }}</h1>
         </div>
 
-        <button
-            type="button"
-            class="shrink-0 inline-flex items-center rounded-xl bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700"
-            @click="addOpen = true"
-        >
-            + Add Staff
-        </button>
+        <div class="flex flex-wrap gap-2">
+            <a
+                href="{{ route('admin.offices.preventiveMaintenance.export', $office) }}"
+                class="shrink-0 inline-flex items-center rounded-xl bg-green-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-green-700"
+            >
+                Export Excel Report
+            </a>
+
+            <button
+                type="button"
+                class="shrink-0 inline-flex items-center rounded-xl bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700"
+                @click="addOpen = true"
+            >
+                + Add Staff
+            </button>
+        </div>
     </div>
+
+    @if(session('success'))
+        <div class="rounded-xl bg-green-100 px-4 py-3 text-sm text-green-700">
+            {{ session('success') }}
+        </div>
+    @endif
+
+    @if(session('error'))
+        <div class="rounded-xl bg-red-100 px-4 py-3 text-sm text-red-700">
+            {{ session('error') }}
+        </div>
+    @endif
 
     {{-- Mobile cards --}}
     <div class="grid grid-cols-1 gap-3 md:hidden">
@@ -114,6 +135,13 @@
                 </div>
 
                 <div class="mt-4 flex flex-wrap gap-2">
+                    <a
+                        href="{{ route('admin.staff.devices.index', $s) }}"
+                        class="rounded-lg bg-green-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-green-700"
+                    >
+                        Devices
+                    </a>
+
                     <button
                         type="button"
                         class="rounded-lg bg-gray-900 px-3 py-1.5 text-sm font-medium text-white hover:bg-black"
@@ -160,6 +188,7 @@
                         <th class="px-4 py-3 font-semibold text-gray-700">Actions</th>
                     </tr>
                 </thead>
+
                 <tbody class="divide-y divide-gray-200">
                     @forelse($staff as $s)
                         <tr class="hover:bg-gray-50">
@@ -190,6 +219,13 @@
 
                             <td class="px-4 py-3 whitespace-nowrap">
                                 <div class="flex items-center gap-2">
+                                    <a
+                                        href="{{ route('admin.staff.devices.index', $s) }}"
+                                        class="rounded-lg bg-green-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-green-700"
+                                    >
+                                        Devices
+                                    </a>
+
                                     <button
                                         type="button"
                                         class="rounded-lg bg-gray-900 px-3 py-1.5 text-sm font-medium text-white hover:bg-black"
@@ -278,7 +314,7 @@
     <x-modal show="editOpen" title="Edit Staff">
         <form
             method="POST"
-            :action="`{{ url('/admin/offices/'.$office->id.'/staff') }}/${editStaff.id}`"
+            :action="`{{ url('/offices/'.$office->id.'/staff') }}/${editStaff.id}`"
             class="space-y-3"
         >
             @csrf
@@ -330,7 +366,7 @@
 
             <form
                 method="POST"
-                :action="`{{ url('/admin/offices/'.$office->id.'/staff') }}/${deleteStaffId}`"
+                :action="`{{ url('/offices/'.$office->id.'/staff') }}/${deleteStaffId}`"
                 class="flex gap-2"
             >
                 @csrf

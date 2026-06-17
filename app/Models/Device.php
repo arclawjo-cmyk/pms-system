@@ -9,23 +9,29 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Device extends Model
 {
-  protected $fillable = [
+    protected $fillable = [
     'device_type_id',
     'property_number',
+    'serial_number',
     'brand',
+    'model',
     'mac_address',
     'unit_price',
     'date_acquired',
     'status',
+    'condition',
     'notes',
-    'specs',   // VERY IMPORTANT
+    'specs',
+    'last_maintenance_date',
+    'maintenance_remarks',
 ];
 
-   protected $casts = [
-    'specs' => 'array',
-    'date_acquired' => 'date',
-];
-        
+    protected $casts = [
+        'specs' => 'array',
+        'date_acquired' => 'date',
+        'last_maintenance_date' => 'date',
+    ];
+
     public function type(): BelongsTo
     {
         return $this->belongsTo(DeviceType::class, 'device_type_id');
@@ -38,6 +44,19 @@ class Device extends Model
 
     public function currentAssignment(): HasOne
     {
-        return $this->hasOne(DeviceAssignment::class)->whereNull('returned_at');
+        return $this->hasOne(DeviceAssignment::class)
+            ->whereNull('returned_at')
+            ->latestOfMany();
+    }
+
+    public function maintenanceRecords(): HasMany
+    {
+        return $this->hasMany(DeviceMaintenanceRecord::class);
+    }
+
+    public function latestMaintenanceRecord(): HasOne
+    {
+        return $this->hasOne(DeviceMaintenanceRecord::class)
+            ->latestOfMany('maintenance_date');
     }
 }

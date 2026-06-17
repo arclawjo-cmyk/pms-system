@@ -15,14 +15,28 @@ class StaffDeviceController extends Controller
     {
         $staff->load('office.college');
 
-        $issued = DeviceAssignment::where('staff_id', $staff->id)
+        $issued = DeviceAssignment::query()
+            ->where('staff_id', $staff->id)
             ->whereNull('returned_at')
-            ->with(['device.type'])
+            ->with([
+                'device.type',
+                'device.latestMaintenanceRecord',
+            ])
             ->orderByDesc('issued_at')
             ->get();
 
-        $availableDevices = Device::with('type')
+        /*
+        |--------------------------------------------------------------------------
+        | Available Devices for Picker
+        |--------------------------------------------------------------------------
+        | Only show devices that:
+        | 1. Have status = available
+        | 2. Do not have an active assignment
+        */
+        $availableDevices = Device::query()
+            ->with('type')
             ->where('status', 'available')
+            ->whereDoesntHave('currentAssignment')
             ->orderBy('property_number')
             ->get();
 
@@ -31,13 +45,29 @@ class StaffDeviceController extends Controller
 
     public function issue(Request $request, Staff $staff)
     {
-        $request->validate([
-            'device_id' => ['required','exists:devices,id'],
+        $data = $request->validate([
+            'device_id' => ['required', 'exists:devices,id'],
         ]);
 
-        $device = Device::findOrFail($request->device_id);
-        if ($device->status !== 'available') {
-            return back()->with('error', 'Device not available.');
+        /*
+        |--------------------------------------------------------------------------
+        | Re-check Availability
+        |--------------------------------------------------------------------------
+        | This prevents issuing devices that were already issued by another admin,
+        | even if they were visible in the modal before the page refreshed.
+        */
+        $device = Device::query()
+            ->where('id', $data['device_id'])
+            ->where('status', 'available')
+            ->whereDoesntHave('currentAssignment')
+            ->first();
+
+        if (! $device) {
+            return back()
+                ->withErrors([
+                    'device_id' => 'This device is not available or has already been issued.',
+                ])
+                ->withInput();
         }
 
         DeviceAssignment::create([
@@ -47,9 +77,11 @@ class StaffDeviceController extends Controller
             'issued_at' => now(),
         ]);
 
-        $device->update(['status' => 'issued']);
+        $device->update([
+            'status' => 'issued',
+        ]);
 
-        return back()->with('success', 'Device issued.');
+        return back()->with('success', 'Device issued successfully.');
     }
 
     public function return(Staff $staff, DeviceAssignment $assignment)
@@ -57,13 +89,21 @@ class StaffDeviceController extends Controller
         abort_unless($assignment->staff_id === $staff->id, 404);
 
         if ($assignment->returned_at) {
-            return back();
+            return back()->with('info', 'Device is already returned.');
         }
 
         $assignment->load('device');
-        $assignment->update(['returned_at' => now()]);
-        $assignment->device?->update(['status' => 'available']);
 
-        return back()->with('success', 'Device returned.');
+        $assignment->update([
+            'returned_at' => now(),
+        ]);
+
+        if ($assignment->device) {
+            $assignment->device->update([
+                'status' => 'available',
+            ]);
+        }
+
+        return back()->with('success', 'Device returned successfully.');
     }
 }
