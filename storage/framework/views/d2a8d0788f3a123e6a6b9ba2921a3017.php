@@ -75,15 +75,15 @@
     </div>
 
     <div class="qr-container">
-        @foreach($devices as $device)
+        <?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if BLOCK]><![endif]--><?php \Livewire\Features\SupportCompiledWireKeys\SupportCompiledWireKeys::openLoop(); ?><?php endif; ?><?php $__currentLoopData = $devices; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $device): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?><?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><?php \Livewire\Features\SupportCompiledWireKeys\SupportCompiledWireKeys::startLoopIteration(); ?><?php endif; ?>
             <div class="qr-card">
-                <div class="qr-prop">{{ $device->property_number }}</div>
-                <div>{!! $qrCodes[$device->id] !!}</div>
-                <div class="qr-type">{{ $device->type?->name }}</div>
-                <div class="qr-serial">Serial: {{ $device->serial_number ?: 'N/A' }}</div>
+                <div class="qr-prop"><?php echo e($device->property_number); ?></div>
+                <div><?php echo $qrCodes[$device->id]; ?></div>
+                <div class="qr-type"><?php echo e($device->type?->name); ?></div>
+                <div class="qr-serial">Serial: <?php echo e($device->serial_number ?: 'N/A'); ?></div>
             </div>
-        @endforeach
+        <?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><?php \Livewire\Features\SupportCompiledWireKeys\SupportCompiledWireKeys::endLoop(); ?><?php endif; ?><?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?><?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if ENDBLOCK]><![endif]--><?php \Livewire\Features\SupportCompiledWireKeys\SupportCompiledWireKeys::closeLoop(); ?><?php endif; ?>
     </div>
 
 </body>
-</html>
+</html><?php /**PATH C:\xampp\htdocs\pms_system\resources\views/admin/devices/generate-qr.blade.php ENDPATH**/ ?>
