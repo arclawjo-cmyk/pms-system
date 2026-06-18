@@ -34,7 +34,7 @@ class DeviceController extends Controller
                 'latestMaintenanceRecord',
             ])
             ->when($q, function ($query) use ($q) {
-                $query->where(function ($sub) use ($q) {
+                return $query->where(function ($sub) use ($q) {
                     $sub->where('property_number', 'like', "%{$q}%")
                         ->orWhere('serial_number', 'like', "%{$q}%")
                         ->orWhere('brand', 'like', "%{$q}%")
@@ -43,10 +43,10 @@ class DeviceController extends Controller
                 });
             })
             ->when($typeId, function ($query) use ($typeId) {
-                $query->where('device_type_id', $typeId);
+                return $query->where('device_type_id', $typeId);
             })
             ->when($condition, function ($query) use ($condition) {
-                $query->where('condition', $condition);
+                return $query->where('condition', $condition);
             })
             ->orderByDesc('id')
             ->paginate(15)
