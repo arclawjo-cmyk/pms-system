@@ -250,6 +250,32 @@
         </div>
     </div>
 
+    {{-- Charts --}}
+    <div class="grid grid-cols-1 gap-6 xl:grid-cols-3">
+
+        {{-- Bar Chart: Devices by Status --}}
+        <div class="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+            <h2 class="text-base font-semibold text-gray-900">Devices by Status</h2>
+            <p class="mt-1 mb-4 text-sm text-gray-500">Current status breakdown.</p>
+            <canvas id="statusChart"></canvas>
+        </div>
+
+        {{-- Doughnut Chart: Devices by Type --}}
+        <div class="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+            <h2 class="text-base font-semibold text-gray-900">Devices by Type</h2>
+            <p class="mt-1 mb-4 text-sm text-gray-500">Distribution across device categories.</p>
+            <canvas id="typeChart"></canvas>
+        </div>
+
+        {{-- Bar Chart: Devices by Office --}}
+        <div class="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+            <h2 class="text-base font-semibold text-gray-900">Devices by Office</h2>
+            <p class="mt-1 mb-4 text-sm text-gray-500">Issued devices per office.</p>
+            <canvas id="officeChart"></canvas>
+        </div>
+
+    </div>
+
     {{-- Recent Tables --}}
     <div class="grid grid-cols-1 gap-6 xl:grid-cols-2">
         {{-- Recent Issued Devices --}}
@@ -559,14 +585,14 @@
 
                             <input
                                 type="text"
-                                name="specs[os]"
-                                value="{{ old('specs.os') }}"
+                                name="specs[os_version]"
+                                value="{{ old('specs.os_version') }}"
                                 class="w-full rounded-lg border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                                 placeholder="Example: Windows 10"
                                 :disabled="!isComputerType()"
                             >
 
-                            @error('specs.os')
+                            @error('specs.os_version')
                                 <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                             @enderror
                         </div>
@@ -760,3 +786,75 @@
     </div>
 </div>
 @endsection
+
+@push('scripts')
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+    // Bar Chart: Devices by Status
+    new Chart(document.getElementById('statusChart'), {
+        type: 'bar',
+        data: {
+            labels: @json(array_keys($devicesByStatus ?? [])),
+            datasets: [{
+                label: 'Devices',
+                data: @json(array_values($devicesByStatus ?? [])),
+                backgroundColor: ['#3b82f6', '#6366f1', '#22c55e', '#ef4444'],
+                borderRadius: 6,
+                borderSkipped: false,
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: { legend: { display: false } },
+            scales: {
+                y: { beginAtZero: true, ticks: { stepSize: 1 } }
+            }
+        }
+    });
+
+    // Doughnut Chart: Devices by Type
+    new Chart(document.getElementById('typeChart'), {
+        type: 'doughnut',
+        data: {
+            labels: @json(($devicesByType ?? collect())->keys()),
+            datasets: [{
+                data: @json(($devicesByType ?? collect())->values()),
+                backgroundColor: [
+                    '#3b82f6','#6366f1','#22c55e','#f59e0b',
+                    '#ef4444','#14b8a6','#ec4899','#8b5cf6'
+                ],
+                borderWidth: 2,
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: { position: 'bottom', labels: { padding: 12, boxWidth: 12 } }
+            }
+        }
+    });
+
+    // Bar Chart: Devices by Office
+    new Chart(document.getElementById('officeChart'), {
+        type: 'bar',
+        data: {
+            labels: @json(($devicesByOffice ?? collect())->keys()),
+            datasets: [{
+                label: 'Issued Devices',
+                data: @json(($devicesByOffice ?? collect())->values()),
+                backgroundColor: '#6366f1',
+                borderRadius: 6,
+                borderSkipped: false,
+            }]
+        },
+        options: {
+            indexAxis: 'y',
+            responsive: true,
+            plugins: { legend: { display: false } },
+            scales: {
+                x: { beginAtZero: true, ticks: { stepSize: 1 } }
+            }
+        }
+    });
+</script>
+@endpush

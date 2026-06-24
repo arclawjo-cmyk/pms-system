@@ -647,10 +647,9 @@
                 <div x-show="isComputerType(editDevice.type_name)" x-cloak>
                     <label class="text-sm font-medium">Operating System</label>
                     <input
-                        name="specs[os]"
+                        name="specs[os_version]"
                         class="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2"
-                        x-model="editDevice.specs.os"
-                        maxlength="100"
+                        x-model="editDevice.specs.os_version"
                         :disabled="!isComputerType(editDevice.type_name)"
                     >
                 </div>
