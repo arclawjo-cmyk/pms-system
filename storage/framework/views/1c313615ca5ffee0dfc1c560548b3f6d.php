@@ -241,20 +241,16 @@ document.addEventListener('alpine:init', () => {
         <form method="POST" action="<?php echo e(route('admin.colleges.store')); ?>" class="space-y-3">
             <?php echo csrf_field(); ?>
 
-            <div>
-                <div class="flex items-center justify-between gap-3">
-                    <label class="text-sm font-medium">Add multiple colleges</label>
-                    <button
-                        type="button"
-                        class="rounded-lg px-3 py-1.5 text-sm font-medium border"
-                    x-bind:class="bulkEnabled ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'"
-                        @click="bulkEnabled = !bulkEnabled"
-                    >
-                        <span x-text="bulkEnabled ? 'Bulk: On' : 'Bulk: Off'">OFF</span>
-                    </button>
-
-
-                </div>
+            <div class="flex items-center justify-between">
+                <span class="text-sm font-medium text-gray-700">Add multiple colleges</span>
+                <button
+                    type="button"
+                    class="rounded-lg px-3 py-1.5 text-sm font-medium border"
+                    :class="bulkEnabled ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-700 border-gray-300'"
+                    @click="bulkEnabled = !bulkEnabled"
+                >
+                    <span x-text="bulkEnabled ? 'Bulk: On' : 'Bulk: Off'"></span>
+                </button>
             </div>
 
             <div class="space-y-3">
@@ -283,11 +279,9 @@ document.addEventListener('alpine:init', () => {
 
                 <!-- Bulk form -->
                 <template x-if="bulkEnabled">
-                    <div class="space-y-4">
+                    <div class="space-y-5">
                         <template x-for="(row, idx) in bulkRows" :key="idx">
-                            <div class="space-y-2 rounded-lg border border-gray-200 p-3 bg-gray-50">
-                                <div class="text-xs font-semibold text-gray-600" x-text="`College ${idx + 1}`"></div>
-
+                            <div class="space-y-3" :class="idx > 0 ? 'pt-4 border-t border-gray-200' : ''">
                                 <div>
                                     <label class="text-sm font-medium">College Name</label>
                                     <input
@@ -295,7 +289,10 @@ document.addEventListener('alpine:init', () => {
                                         x-model="row.name"
                                         class="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2"
                                         required
-                                        :placeholder="`e.g. College ${idx + 1}`"
+                                        maxlength="150"
+                                        pattern="[A-Za-zÑñ0-9][A-Za-zÑñ0-9.,&'\-\(\)\s]*"
+                                        title="Letters, numbers, and basic punctuation only"
+                                        placeholder="e.g. College of Science"
                                     >
                                     <div class="mt-1 text-sm text-red-600" x-show="row.nameError" x-text="row.nameError"></div>
                                 </div>
@@ -306,7 +303,11 @@ document.addEventListener('alpine:init', () => {
                                         :name="`codes[${idx}]`"
                                         x-model="row.code"
                                         class="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2"
-                                        placeholder="Optional (unique)"
+                                        maxlength="20"
+                                        pattern="[A-Za-z0-9\-]*"
+                                        title="Letters, numbers, and hyphens only (no spaces)"
+                                        placeholder="e.g. COS"
+                                        @input="row.code = row.code.toUpperCase().replace(/[^A-Z0-9\-]/g, '')"
                                     >
                                     <div class="mt-1 text-sm text-red-600" x-show="row.codeError" x-text="row.codeError"></div>
                                 </div>
@@ -325,7 +326,10 @@ document.addEventListener('alpine:init', () => {
                                 x-model="addSingle.name"
                                 class="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2"
                                 required
-                                placeholder="Enter college name"
+                                maxlength="150"
+                                pattern="[A-Za-zÑñ0-9][A-Za-zÑñ0-9.,&'\-\(\)\s]*"
+                                title="Letters, numbers, and basic punctuation only"
+                                placeholder="e.g. College of Science"
                             >
                             <div class="mt-1 text-sm text-red-600" x-show="addSingle.nameError" x-text="addSingle.nameError"></div>
                         </div>
@@ -336,7 +340,11 @@ document.addEventListener('alpine:init', () => {
                                 name="code"
                                 x-model="addSingle.code"
                                 class="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2"
-                                placeholder="Optional (unique)"
+                                maxlength="20"
+                                pattern="[A-Za-z0-9\-]*"
+                                title="Letters, numbers, and hyphens only (no spaces)"
+                                placeholder="e.g. COS"
+                                @input="addSingle.code = addSingle.code.toUpperCase().replace(/[^A-Z0-9\-]/g, '')"
                             >
                             <div class="mt-1 text-sm text-red-600" x-show="addSingle.codeError" x-text="addSingle.codeError"></div>
                         </div>
@@ -397,6 +405,9 @@ document.addEventListener('alpine:init', () => {
                     class="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2"
                     x-model="editCollege.name"
                     required
+                    maxlength="150"
+                    pattern="[A-Za-zÑñ0-9][A-Za-zÑñ0-9.,&'\-\(\)\s]*"
+                    title="Letters, numbers, and basic punctuation only"
                 >
                 <div class="mt-1 text-sm text-red-600" x-show="editCollege.nameError" x-text="editCollege.nameError"></div>
             </div>
@@ -407,6 +418,10 @@ document.addEventListener('alpine:init', () => {
                     name="code"
                     class="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2"
                     x-model="editCollege.code"
+                    maxlength="20"
+                    pattern="[A-Za-z0-9\-]*"
+                    title="Letters, numbers, and hyphens only (no spaces)"
+                    @input="editCollege.code = editCollege.code.toUpperCase().replace(/[^A-Z0-9\-]/g, '')"
                 >
                 <div class="mt-1 text-sm text-red-600" x-show="editCollege.codeError" x-text="editCollege.codeError"></div>
             </div>

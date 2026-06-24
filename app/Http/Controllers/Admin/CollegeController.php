@@ -9,6 +9,9 @@ use Illuminate\Validation\Rule;
 
 class CollegeController extends Controller
 {
+    private const NAME_REGEX = '/^[A-Za-zÑñ0-9][A-Za-zÑñ0-9.,&\'\-\(\)\s]*$/u';
+    private const CODE_REGEX = '/^[A-Za-z0-9\-]+$/';
+
     public function index()
     {
         $colleges = College::orderBy('name')->paginate(15);
@@ -35,11 +38,12 @@ class CollegeController extends Controller
 
             $rules = [];
             for ($i = 0; $i < $count; $i++) {
-                $rules["names.$i"] = ['required', 'string', 'max:255'];
+                $rules["names.$i"] = ['required', 'string', 'max:150', 'regex:' . self::NAME_REGEX];
                 $rules["codes.$i"] = [
                     'nullable',
                     'string',
-                    'max:255',
+                    'max:20',
+                    'regex:' . self::CODE_REGEX,
                     Rule::unique('colleges', 'code'),
                     // Rule::unique only checks against existing DB rows, so two
                     // duplicate codes submitted together in the same bulk batch
@@ -64,9 +68,11 @@ class CollegeController extends Controller
             $data = $request->validateWithBag('add', $rules, [
                 'names.*.required' => 'The college name is required.',
                 'names.*.string' => 'The college name must be text.',
-                'names.*.max' => 'The college name may not be longer than 255 characters.',
+                'names.*.max' => 'The college name may not be longer than 150 characters.',
+                'names.*.regex' => 'The college name contains invalid characters.',
                 'codes.*.string' => 'The code must be text.',
-                'codes.*.max' => 'The code may not be longer than 255 characters.',
+                'codes.*.max' => 'The code may not be longer than 20 characters.',
+                'codes.*.regex' => 'The code may only contain letters, numbers, and hyphens.',
                 'codes.*.unique' => 'This code has already been taken.',
             ], [
                 'names.*' => 'college name',
@@ -95,13 +101,17 @@ class CollegeController extends Controller
 
         // Single
         $data = $request->validateWithBag('add', [
-            'name' => ['required', 'string', 'max:255'],
+            'name' => ['required', 'string', 'max:150', 'regex:' . self::NAME_REGEX],
             'code' => [
                 'nullable',
                 'string',
-                'max:255',
+                'max:20',
+                'regex:' . self::CODE_REGEX,
                 Rule::unique('colleges', 'code'),
             ],
+        ], [
+            'name.regex' => 'The college name contains invalid characters.',
+            'code.regex' => 'The code may only contain letters, numbers, and hyphens.',
         ]);
 
 
@@ -124,13 +134,17 @@ class CollegeController extends Controller
     public function update(Request $request, College $college)
     {
         $data = $request->validateWithBag('edit', [
-            'name' => ['required', 'string', 'max:255'],
+            'name' => ['required', 'string', 'max:150', 'regex:' . self::NAME_REGEX],
             'code' => [
                 'nullable',
                 'string',
-                'max:255',
+                'max:20',
+                'regex:' . self::CODE_REGEX,
                 Rule::unique('colleges', 'code')->ignore($college->id),
             ],
+        ], [
+            'name.regex' => 'The college name contains invalid characters.',
+            'code.regex' => 'The code may only contain letters, numbers, and hyphens.',
         ]);
 
 

@@ -35,6 +35,7 @@
             value="<?php echo e(old('email')); ?>"
             class="w-full border rounded px-3 py-2 mb-3"
             required
+            maxlength="255"
             autofocus
         >
 

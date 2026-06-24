@@ -3,24 +3,78 @@
 
 <?php $__env->startSection('content'); ?>
 <?php
+    // Common administrative/academic positions found across Philippine college
+    // departments/offices. Kept generic since these roles repeat across every
+    // college type (College of Science, College of Education, etc.).
+    $commonPositions = [
+        'Dean',
+        'Associate Dean',
+        'Department Chairperson',
+        'Program Coordinator',
+        'College Secretary',
+        'Administrative Officer',
+        'Administrative Aide',
+        'Records Officer',
+        'Guidance Counselor',
+        'Librarian',
+        'Library Assistant',
+        'Registrar Staff',
+        'Faculty / Instructor',
+        'Assistant Professor',
+        'Associate Professor',
+        'Professor',
+        'Laboratory Technician',
+        'IT / MIS Staff',
+        'Property Custodian',
+        'Budget Officer',
+        'Accounting Staff',
+        'Cashier',
+        'Human Resources Officer',
+        'Clerk',
+        'Utility Worker',
+        'Security Guard',
+        'Driver',
+    ];
+
+    // Resolve a stored/old position string into [selectValue, otherText] so
+    // the dropdown can pre-select a known option, or fall back to "Other".
+    $resolvePosition = function (?string $value) use ($commonPositions) {
+        if ($value === null || $value === '') {
+            return ['', ''];
+        }
+
+        if (in_array($value, $commonPositions, true)) {
+            return [$value, ''];
+        }
+
+        return ['__other__', $value];
+    };
+
     $addBag = $errors->getBag('add');
     $editBag = $errors->getBag('edit');
+
+    [$addSinglePosition, $addSinglePositionOther] = $resolvePosition(old('position'));
+    [$editPosition, $editPositionOther] = $resolvePosition(old('position'));
 
     $oldStaffRows = old('staff', []);
     $bulkSeedCount = $oldStaffRows ? max(1, min(3, count($oldStaffRows))) : 2;
 
     $bulkRowsSeed = [];
     for ($i = 0; $i < $bulkSeedCount; $i++) {
+        [$rowPosition, $rowPositionOther] = $resolvePosition($oldStaffRows[$i]['position'] ?? null);
+
         $bulkRowsSeed[] = [
             'first_name' => $oldStaffRows[$i]['first_name'] ?? '',
             'last_name' => $oldStaffRows[$i]['last_name'] ?? '',
-            'position' => $oldStaffRows[$i]['position'] ?? '',
+            'position' => $rowPosition,
+            'positionOther' => $rowPositionOther,
             'email' => $oldStaffRows[$i]['email'] ?? '',
             'phone' => $oldStaffRows[$i]['phone'] ?? '',
             'is_active' => $oldStaffRows ? isset($oldStaffRows[$i]['is_active']) : true,
             'firstNameError' => $addBag->first("staff.$i.first_name"),
             'lastNameError' => $addBag->first("staff.$i.last_name"),
             'emailError' => $addBag->first("staff.$i.email"),
+            'phoneError' => $addBag->first("staff.$i.phone"),
         ];
     }
 ?>
@@ -32,16 +86,32 @@ document.addEventListener('alpine:init', () => {
         deleteOpen: false,
         bulkEnabled: <?php echo e(old('staff') !== null ? 'true' : 'false'); ?>,
 
+        commonPositions: <?php echo json_encode($commonPositions, 15, 512) ?>,
+
+        // Resolve a position string into {position, positionOther} for the
+        // dropdown — used when opening Edit on an existing staff record.
+        resolvePosition(value) {
+            if (!value) {
+                return { position: '', positionOther: '' };
+            }
+            if (this.commonPositions.includes(value)) {
+                return { position: value, positionOther: '' };
+            }
+            return { position: '__other__', positionOther: value };
+        },
+
         addSingle: {
             first_name: <?php echo \Illuminate\Support\Js::from(old('first_name', ''))->toHtml() ?>,
             last_name: <?php echo \Illuminate\Support\Js::from(old('last_name', ''))->toHtml() ?>,
-            position: <?php echo \Illuminate\Support\Js::from(old('position', ''))->toHtml() ?>,
+            position: <?php echo \Illuminate\Support\Js::from($addSinglePosition)->toHtml() ?>,
+            positionOther: <?php echo \Illuminate\Support\Js::from($addSinglePositionOther)->toHtml() ?>,
             email: <?php echo \Illuminate\Support\Js::from(old('email', ''))->toHtml() ?>,
             phone: <?php echo \Illuminate\Support\Js::from(old('phone', ''))->toHtml() ?>,
             is_active: <?php echo e(old('first_name') !== null ? (old('is_active') ? 'true' : 'false') : 'true'); ?>,
             firstNameError: <?php echo \Illuminate\Support\Js::from($addBag->first('first_name'))->toHtml() ?>,
             lastNameError: <?php echo \Illuminate\Support\Js::from($addBag->first('last_name'))->toHtml() ?>,
-            emailError: <?php echo \Illuminate\Support\Js::from($addBag->first('email'))->toHtml() ?>
+            emailError: <?php echo \Illuminate\Support\Js::from($addBag->first('email'))->toHtml() ?>,
+            phoneError: <?php echo \Illuminate\Support\Js::from($addBag->first('phone'))->toHtml() ?>
         },
 
         bulkRows: <?php echo json_encode($bulkRowsSeed, 15, 512) ?>,
@@ -50,34 +120,37 @@ document.addEventListener('alpine:init', () => {
             id: <?php echo \Illuminate\Support\Js::from(old('editing_id') !== null ? (int) old('editing_id') : null)->toHtml() ?>,
             first_name: <?php echo \Illuminate\Support\Js::from(old('first_name', ''))->toHtml() ?>,
             last_name: <?php echo \Illuminate\Support\Js::from(old('last_name', ''))->toHtml() ?>,
-            position: <?php echo \Illuminate\Support\Js::from(old('position', ''))->toHtml() ?>,
+            position: <?php echo \Illuminate\Support\Js::from($editPosition)->toHtml() ?>,
+            positionOther: <?php echo \Illuminate\Support\Js::from($editPositionOther)->toHtml() ?>,
             email: <?php echo \Illuminate\Support\Js::from(old('email', ''))->toHtml() ?>,
             phone: <?php echo \Illuminate\Support\Js::from(old('phone', ''))->toHtml() ?>,
             is_active: <?php echo e(old('editing_id') !== null ? (old('is_active') ? 'true' : 'false') : 'true'); ?>,
             firstNameError: <?php echo \Illuminate\Support\Js::from($editBag->first('first_name'))->toHtml() ?>,
             lastNameError: <?php echo \Illuminate\Support\Js::from($editBag->first('last_name'))->toHtml() ?>,
-            emailError: <?php echo \Illuminate\Support\Js::from($editBag->first('email'))->toHtml() ?>
+            emailError: <?php echo \Illuminate\Support\Js::from($editBag->first('email'))->toHtml() ?>,
+            phoneError: <?php echo \Illuminate\Support\Js::from($editBag->first('phone'))->toHtml() ?>
         },
 
         deleteStaffId: null,
 
+        blankRow() {
+            return {
+                first_name: '', last_name: '', position: '', positionOther: '', email: '', phone: '',
+                is_active: true,
+                firstNameError: '', lastNameError: '', emailError: '', phoneError: ''
+            };
+        },
+
         openAdd() {
             this.addOpen = true;
             this.bulkEnabled = false;
-            this.addSingle = {
-                first_name: '', last_name: '', position: '', email: '', phone: '',
-                is_active: true,
-                firstNameError: '', lastNameError: '', emailError: ''
-            };
-            this.bulkRows = [
-                { first_name: '', last_name: '', position: '', email: '', phone: '', is_active: true, firstNameError: '', lastNameError: '', emailError: '' },
-                { first_name: '', last_name: '', position: '', email: '', phone: '', is_active: true, firstNameError: '', lastNameError: '', emailError: '' },
-            ];
+            this.addSingle = this.blankRow();
+            this.bulkRows = [this.blankRow(), this.blankRow()];
         },
 
         addBulkRow() {
             if (this.bulkRows.length < 3) {
-                this.bulkRows.push({ first_name: '', last_name: '', position: '', email: '', phone: '', is_active: true, firstNameError: '', lastNameError: '', emailError: '' });
+                this.bulkRows.push(this.blankRow());
             }
         },
 
@@ -88,17 +161,21 @@ document.addEventListener('alpine:init', () => {
         },
 
         openEdit(staff) {
+            const resolved = this.resolvePosition(staff.position ?? '');
+
             this.editStaff = {
                 id: staff.id,
                 first_name: staff.first_name ?? '',
                 last_name: staff.last_name ?? '',
-                position: staff.position ?? '',
+                position: resolved.position,
+                positionOther: resolved.positionOther,
                 email: staff.email ?? '',
                 phone: staff.phone ?? '',
                 is_active: !!staff.is_active,
                 firstNameError: '',
                 lastNameError: '',
-                emailError: ''
+                emailError: '',
+                phoneError: ''
             };
             this.editOpen = true;
         },
@@ -152,13 +229,6 @@ document.addEventListener('alpine:init', () => {
             </button>
         </div>
     </div>
-
-    <?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if BLOCK]><![endif]--><?php endif; ?><?php if(session('error')): ?>
-        <div class="rounded-xl bg-red-100 px-4 py-3 text-sm text-red-700">
-            <?php echo e(session('error')); ?>
-
-        </div>
-    <?php endif; ?><?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if ENDBLOCK]><![endif]--><?php endif; ?>
 
     
     <div class="grid grid-cols-1 gap-3 md:hidden">
@@ -395,41 +465,67 @@ document.addEventListener('alpine:init', () => {
 
                 <!-- Bulk form -->
                 <template x-if="bulkEnabled">
-                    <div class="space-y-4">
+                    <div class="space-y-5">
                         <template x-for="(row, idx) in bulkRows" :key="idx">
-                            <div class="space-y-2 rounded-lg border border-gray-200 p-3 bg-gray-50">
-                                <div class="text-xs font-semibold text-gray-600" x-text="`Staff ${idx + 1}`"></div>
+                            <div class="space-y-3" :class="idx > 0 ? 'pt-4 border-t border-gray-200' : ''">
+                                <div>
+                                    <label class="text-sm font-medium">First Name</label>
+                                    <input
+                                        :name="`staff[${idx}][first_name]`"
+                                        x-model="row.first_name"
+                                        class="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2"
+                                        required
+                                        maxlength="100"
+                                        pattern="[A-Za-zÑñ][A-Za-zÑñ.\-'\s]*"
+                                        title="Letters only (no numbers or symbols other than . - ')"
+                                        placeholder="e.g. Juan"
+                                        @input="row.first_name = row.first_name.replace(/[^A-Za-zÑñ.\-'\s]/g, '')"
+                                    >
+                                    <div class="mt-1 text-sm text-red-600" x-show="row.firstNameError" x-text="row.firstNameError"></div>
+                                </div>
 
-                                <div class="grid grid-cols-2 gap-2">
-                                    <div>
-                                        <label class="text-sm font-medium">First Name</label>
-                                        <input
-                                            :name="`staff[${idx}][first_name]`"
-                                            x-model="row.first_name"
-                                            class="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2"
-                                            required
-                                        >
-                                        <div class="mt-1 text-sm text-red-600" x-show="row.firstNameError" x-text="row.firstNameError"></div>
-                                    </div>
-
-                                    <div>
-                                        <label class="text-sm font-medium">Last Name</label>
-                                        <input
-                                            :name="`staff[${idx}][last_name]`"
-                                            x-model="row.last_name"
-                                            class="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2"
-                                            required
-                                        >
-                                        <div class="mt-1 text-sm text-red-600" x-show="row.lastNameError" x-text="row.lastNameError"></div>
-                                    </div>
+                                <div>
+                                    <label class="text-sm font-medium">Last Name</label>
+                                    <input
+                                        :name="`staff[${idx}][last_name]`"
+                                        x-model="row.last_name"
+                                        class="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2"
+                                        required
+                                        maxlength="100"
+                                        pattern="[A-Za-zÑñ][A-Za-zÑñ.\-'\s]*"
+                                        title="Letters only (no numbers or symbols other than . - ')"
+                                        placeholder="e.g. Dela Cruz"
+                                        @input="row.last_name = row.last_name.replace(/[^A-Za-zÑñ.\-'\s]/g, '')"
+                                    >
+                                    <div class="mt-1 text-sm text-red-600" x-show="row.lastNameError" x-text="row.lastNameError"></div>
                                 </div>
 
                                 <div>
                                     <label class="text-sm font-medium">Position</label>
-                                    <input
-                                        :name="`staff[${idx}][position]`"
+                                    <select
                                         x-model="row.position"
                                         class="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2"
+                                    >
+                                        <option value="">Select position</option>
+                                        <template x-for="opt in commonPositions" :key="opt">
+                                            <option :value="opt" x-text="opt"></option>
+                                        </template>
+                                        <option value="__other__">Other (please specify)</option>
+                                    </select>
+
+                                    <input
+                                        type="hidden"
+                                        :name="`staff[${idx}][position]`"
+                                        :value="row.position === '__other__' ? row.positionOther : row.position"
+                                    >
+
+                                    <input
+                                        x-show="row.position === '__other__'"
+                                        x-model="row.positionOther"
+                                        type="text"
+                                        maxlength="100"
+                                        class="mt-2 w-full rounded-lg border border-gray-300 px-3 py-2"
+                                        placeholder="Specify position"
                                     >
                                 </div>
 
@@ -439,6 +535,10 @@ document.addEventListener('alpine:init', () => {
                                         :name="`staff[${idx}][email]`"
                                         x-model="row.email"
                                         type="email"
+                                        maxlength="255"
+                                        pattern="[^\s@]+@[^\s@]+\.[^\s@]+"
+                                        title="Enter a complete email address, e.g. juan.delacruz@example.com"
+                                        placeholder="e.g. juan.delacruz@example.com"
                                         class="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2"
                                     >
                                     <div class="mt-1 text-sm text-red-600" x-show="row.emailError" x-text="row.emailError"></div>
@@ -449,8 +549,15 @@ document.addEventListener('alpine:init', () => {
                                     <input
                                         :name="`staff[${idx}][phone]`"
                                         x-model="row.phone"
+                                        inputmode="numeric"
+                                        maxlength="11"
+                                        pattern="09[0-9]{9}"
+                                        title="11-digit PH mobile number starting with 09, e.g. 09171234567"
+                                        placeholder="09XXXXXXXXX"
                                         class="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2"
+                                        @input="row.phone = row.phone.replace(/[^0-9]/g, '').slice(0, 11)"
                                     >
+                                    <div class="mt-1 text-sm text-red-600" x-show="row.phoneError" x-text="row.phoneError"></div>
                                 </div>
 
                                 <label class="flex items-center gap-2 text-sm">
@@ -472,30 +579,90 @@ document.addEventListener('alpine:init', () => {
                     <div class="space-y-3">
                         <div>
                             <label class="text-sm font-medium">First Name</label>
-                            <input name="first_name" x-model="addSingle.first_name" class="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2" required>
+                            <input
+                                name="first_name"
+                                x-model="addSingle.first_name"
+                                class="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2"
+                                required
+                                maxlength="100"
+                                pattern="[A-Za-zÑñ][A-Za-zÑñ.\-'\s]*"
+                                title="Letters only (no numbers or symbols other than . - ')"
+                                placeholder="e.g. Juan"
+                                @input="addSingle.first_name = addSingle.first_name.replace(/[^A-Za-zÑñ.\-'\s]/g, '')"
+                            >
                             <div class="mt-1 text-sm text-red-600" x-show="addSingle.firstNameError" x-text="addSingle.firstNameError"></div>
                         </div>
 
                         <div>
                             <label class="text-sm font-medium">Last Name</label>
-                            <input name="last_name" x-model="addSingle.last_name" class="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2" required>
+                            <input
+                                name="last_name"
+                                x-model="addSingle.last_name"
+                                class="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2"
+                                required
+                                maxlength="100"
+                                pattern="[A-Za-zÑñ][A-Za-zÑñ.\-'\s]*"
+                                title="Letters only (no numbers or symbols other than . - ')"
+                                placeholder="e.g. Dela Cruz"
+                                @input="addSingle.last_name = addSingle.last_name.replace(/[^A-Za-zÑñ.\-'\s]/g, '')"
+                            >
                             <div class="mt-1 text-sm text-red-600" x-show="addSingle.lastNameError" x-text="addSingle.lastNameError"></div>
                         </div>
 
                         <div>
                             <label class="text-sm font-medium">Position</label>
-                            <input name="position" x-model="addSingle.position" class="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2">
+                            <select
+                                x-model="addSingle.position"
+                                class="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2"
+                            >
+                                <option value="">Select position</option>
+                                <template x-for="opt in commonPositions" :key="opt">
+                                    <option :value="opt" x-text="opt"></option>
+                                </template>
+                                <option value="__other__">Other (please specify)</option>
+                            </select>
+
+                            <input type="hidden" name="position" :value="addSingle.position === '__other__' ? addSingle.positionOther : addSingle.position">
+
+                            <input
+                                x-show="addSingle.position === '__other__'"
+                                x-model="addSingle.positionOther"
+                                type="text"
+                                maxlength="100"
+                                class="mt-2 w-full rounded-lg border border-gray-300 px-3 py-2"
+                                placeholder="Specify position"
+                            >
                         </div>
 
                         <div>
                             <label class="text-sm font-medium">Email</label>
-                            <input name="email" type="email" x-model="addSingle.email" class="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2">
+                            <input
+                                name="email"
+                                type="email"
+                                x-model="addSingle.email"
+                                maxlength="255"
+                                pattern="[^\s@]+@[^\s@]+\.[^\s@]+"
+                                title="Enter a complete email address, e.g. juan.delacruz@example.com"
+                                placeholder="e.g. juan.delacruz@example.com"
+                                class="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2"
+                            >
                             <div class="mt-1 text-sm text-red-600" x-show="addSingle.emailError" x-text="addSingle.emailError"></div>
                         </div>
 
                         <div>
                             <label class="text-sm font-medium">Phone</label>
-                            <input name="phone" x-model="addSingle.phone" class="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2">
+                            <input
+                                name="phone"
+                                x-model="addSingle.phone"
+                                inputmode="numeric"
+                                maxlength="11"
+                                pattern="09[0-9]{9}"
+                                title="11-digit PH mobile number starting with 09, e.g. 09171234567"
+                                placeholder="09XXXXXXXXX"
+                                class="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2"
+                                @input="addSingle.phone = addSingle.phone.replace(/[^0-9]/g, '').slice(0, 11)"
+                            >
+                            <div class="mt-1 text-sm text-red-600" x-show="addSingle.phoneError" x-text="addSingle.phoneError"></div>
                         </div>
 
                         <label class="flex items-center gap-2 text-sm">
@@ -547,30 +714,87 @@ document.addEventListener('alpine:init', () => {
 
             <div>
                 <label class="text-sm font-medium">First Name</label>
-                <input name="first_name" class="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2" x-model="editStaff.first_name" required>
+                <input
+                    name="first_name"
+                    class="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2"
+                    x-model="editStaff.first_name"
+                    required
+                    maxlength="100"
+                    pattern="[A-Za-zÑñ][A-Za-zÑñ.\-'\s]*"
+                    title="Letters only (no numbers or symbols other than . - ')"
+                    @input="editStaff.first_name = editStaff.first_name.replace(/[^A-Za-zÑñ.\-'\s]/g, '')"
+                >
                 <div class="mt-1 text-sm text-red-600" x-show="editStaff.firstNameError" x-text="editStaff.firstNameError"></div>
             </div>
 
             <div>
                 <label class="text-sm font-medium">Last Name</label>
-                <input name="last_name" class="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2" x-model="editStaff.last_name" required>
+                <input
+                    name="last_name"
+                    class="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2"
+                    x-model="editStaff.last_name"
+                    required
+                    maxlength="100"
+                    pattern="[A-Za-zÑñ][A-Za-zÑñ.\-'\s]*"
+                    title="Letters only (no numbers or symbols other than . - ')"
+                    @input="editStaff.last_name = editStaff.last_name.replace(/[^A-Za-zÑñ.\-'\s]/g, '')"
+                >
                 <div class="mt-1 text-sm text-red-600" x-show="editStaff.lastNameError" x-text="editStaff.lastNameError"></div>
             </div>
 
             <div>
                 <label class="text-sm font-medium">Position</label>
-                <input name="position" class="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2" x-model="editStaff.position">
+                <select
+                    x-model="editStaff.position"
+                    class="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2"
+                >
+                    <option value="">Select position</option>
+                    <template x-for="opt in commonPositions" :key="opt">
+                        <option :value="opt" x-text="opt"></option>
+                    </template>
+                    <option value="__other__">Other (please specify)</option>
+                </select>
+
+                <input type="hidden" name="position" :value="editStaff.position === '__other__' ? editStaff.positionOther : editStaff.position">
+
+                <input
+                    x-show="editStaff.position === '__other__'"
+                    x-model="editStaff.positionOther"
+                    type="text"
+                    maxlength="100"
+                    class="mt-2 w-full rounded-lg border border-gray-300 px-3 py-2"
+                    placeholder="Specify position"
+                >
             </div>
 
             <div>
                 <label class="text-sm font-medium">Email</label>
-                <input name="email" type="email" class="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2" x-model="editStaff.email">
+                <input
+                    name="email"
+                    type="email"
+                    class="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2"
+                    x-model="editStaff.email"
+                    maxlength="255"
+                    pattern="[^\s@]+@[^\s@]+\.[^\s@]+"
+                    title="Enter a complete email address, e.g. juan.delacruz@example.com"
+                >
                 <div class="mt-1 text-sm text-red-600" x-show="editStaff.emailError" x-text="editStaff.emailError"></div>
             </div>
 
             <div>
                 <label class="text-sm font-medium">Phone</label>
-                <input name="phone" class="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2" x-model="editStaff.phone">
+                <input
+                    name="phone"
+                    class="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2"
+                    x-model="editStaff.phone"
+                    inputmode="numeric"
+                    maxlength="11"
+                    pattern="09[0-9]{9}"
+                    title="11-digit PH mobile number starting with 09, e.g. 09171234567"
+                    placeholder="09XXXXXXXXX"
+                    @input="editStaff.phone = editStaff.phone.replace(/[^0-9]/g, '').slice(0, 11)"
+                >
+                <div class="mt-1 text-sm text-red-600" x-show="editStaff.phoneError" x-text="editStaff.phoneError"></div>
             </div>
 
             <label class="flex items-center gap-2 text-sm">

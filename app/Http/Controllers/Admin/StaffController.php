@@ -9,6 +9,47 @@ use Illuminate\Http\Request;
 
 class StaffController extends Controller
 {
+    /**
+     * Letters (incl. Ñ/ñ), spaces, hyphens, apostrophes, and periods —
+     * covers names like "De la Cruz", "O'Brien", "Jr.", "II".
+     */
+    private const NAME_REGEX = '/^[A-Za-zÑñ][A-Za-zÑñ\.\-\'\s]*$/u';
+
+    /**
+     * Philippine mobile number: 09 followed by 9 more digits (11 digits total).
+     */
+    private const PH_MOBILE_REGEX = '/^09[0-9]{9}$/';
+
+    private function nameRules(): array
+    {
+        return ['required', 'string', 'max:100', 'regex:' . self::NAME_REGEX];
+    }
+
+    private function positionRules(): array
+    {
+        return ['nullable', 'string', 'max:100'];
+    }
+
+    private function emailRules(): array
+    {
+        return ['nullable', 'email', 'max:255'];
+    }
+
+    private function phoneRules(): array
+    {
+        return ['nullable', 'regex:' . self::PH_MOBILE_REGEX];
+    }
+
+    private function fieldMessages(): array
+    {
+        return [
+            'first_name' => 'Please enter a valid first name (letters only).',
+            'last_name' => 'Please enter a valid last name (letters only).',
+            'email' => 'Please enter a valid email address, e.g. juan.delacruz@example.com.',
+            'phone' => 'Please enter a valid PH mobile number, e.g. 09171234567 (11 digits, starts with 09).',
+        ];
+    }
+
     public function index(Office $office)
     {
         $staff = Staff::where('office_id', $office->id)
@@ -30,26 +71,32 @@ class StaffController extends Controller
             $count = min(max(count($rows), 0), 3);
 
             $rules = [];
+            $messages = [];
+            $attributes = [];
+
             for ($i = 0; $i < $count; $i++) {
-                $rules["staff.$i.first_name"] = ['required', 'string', 'max:255'];
-                $rules["staff.$i.last_name"] = ['required', 'string', 'max:255'];
-                $rules["staff.$i.position"] = ['nullable', 'string', 'max:255'];
-                $rules["staff.$i.email"] = ['nullable', 'email', 'max:255'];
-                $rules["staff.$i.phone"] = ['nullable', 'string', 'max:255'];
+                $rules["staff.$i.first_name"] = $this->nameRules();
+                $rules["staff.$i.last_name"] = $this->nameRules();
+                $rules["staff.$i.position"] = $this->positionRules();
+                $rules["staff.$i.email"] = $this->emailRules();
+                $rules["staff.$i.phone"] = $this->phoneRules();
                 $rules["staff.$i.is_active"] = ['sometimes', 'boolean'];
+
+                $messages["staff.$i.first_name.required"] = 'First name is required.';
+                $messages["staff.$i.first_name.regex"] = $this->fieldMessages()['first_name'];
+                $messages["staff.$i.last_name.required"] = 'Last name is required.';
+                $messages["staff.$i.last_name.regex"] = $this->fieldMessages()['last_name'];
+                $messages["staff.$i.email.email"] = $this->fieldMessages()['email'];
+                $messages["staff.$i.phone.regex"] = $this->fieldMessages()['phone'];
             }
 
-            $data = $request->validateWithBag('add', $rules, [
-                'staff.*.first_name.required' => 'First name is required.',
-                'staff.*.last_name.required' => 'Last name is required.',
-                'staff.*.email.email' => 'Please enter a valid email address.',
-            ], [
-                'staff.*.first_name' => 'first name',
-                'staff.*.last_name' => 'last name',
-                'staff.*.position' => 'position',
-                'staff.*.email' => 'email',
-                'staff.*.phone' => 'phone',
-            ]);
+            $attributes['staff.*.first_name'] = 'first name';
+            $attributes['staff.*.last_name'] = 'last name';
+            $attributes['staff.*.position'] = 'position';
+            $attributes['staff.*.email'] = 'email';
+            $attributes['staff.*.phone'] = 'phone';
+
+            $data = $request->validateWithBag('add', $rules, $messages, $attributes);
 
             foreach ($data['staff'] as $row) {
                 Staff::create([
@@ -68,12 +115,17 @@ class StaffController extends Controller
 
         // Single
         $data = $request->validateWithBag('add', [
-            'first_name' => ['required', 'string', 'max:255'],
-            'last_name' => ['required', 'string', 'max:255'],
-            'position' => ['nullable', 'string', 'max:255'],
-            'email' => ['nullable', 'email', 'max:255'],
-            'phone' => ['nullable', 'string', 'max:255'],
+            'first_name' => $this->nameRules(),
+            'last_name' => $this->nameRules(),
+            'position' => $this->positionRules(),
+            'email' => $this->emailRules(),
+            'phone' => $this->phoneRules(),
             'is_active' => ['sometimes', 'boolean'],
+        ], [
+            'first_name.regex' => $this->fieldMessages()['first_name'],
+            'last_name.regex' => $this->fieldMessages()['last_name'],
+            'email.email' => $this->fieldMessages()['email'],
+            'phone.regex' => $this->fieldMessages()['phone'],
         ]);
 
         Staff::create([
@@ -102,12 +154,17 @@ class StaffController extends Controller
         abort_unless($staff->office_id === $office->id, 404);
 
         $data = $request->validateWithBag('edit', [
-            'first_name' => ['required', 'string', 'max:255'],
-            'last_name' => ['required', 'string', 'max:255'],
-            'position' => ['nullable', 'string', 'max:255'],
-            'email' => ['nullable', 'email', 'max:255'],
-            'phone' => ['nullable', 'string', 'max:255'],
+            'first_name' => $this->nameRules(),
+            'last_name' => $this->nameRules(),
+            'position' => $this->positionRules(),
+            'email' => $this->emailRules(),
+            'phone' => $this->phoneRules(),
             'is_active' => ['sometimes', 'boolean'],
+        ], [
+            'first_name.regex' => $this->fieldMessages()['first_name'],
+            'last_name.regex' => $this->fieldMessages()['last_name'],
+            'email.email' => $this->fieldMessages()['email'],
+            'phone.regex' => $this->fieldMessages()['phone'],
         ]);
 
         $staff->update([
