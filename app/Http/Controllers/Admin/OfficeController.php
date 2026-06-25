@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\ActivityLog;
 use App\Models\College;
 use App\Models\Office;
 use Illuminate\Http\Request;
@@ -65,10 +66,12 @@ class OfficeController extends Controller
             ]);
 
             foreach (range(0, $count - 1) as $i) {
-                Office::create([
+                $office = Office::create([
                     'college_id' => $college->id,
                     'name' => $data['names'][$i],
                 ]);
+
+                ActivityLog::record('created', "Created office \"{$office->name}\" in \"{$college->name}\" (bulk add)", $office);
             }
 
             return back()->with('success', 'Offices created.');
@@ -88,10 +91,12 @@ class OfficeController extends Controller
             'name.unique' => 'This office name already exists in this college.',
         ]);
 
-        Office::create([
+        $office = Office::create([
             'college_id' => $college->id,
             'name' => $data['name'],
         ]);
+
+        ActivityLog::record('created', "Created office \"{$office->name}\" in \"{$college->name}\"", $office);
 
         return back()->with('success', 'Office created.');
     }
@@ -121,13 +126,19 @@ class OfficeController extends Controller
 
         $office->update($data);
 
+        ActivityLog::record('updated', "Updated office \"{$office->name}\" in \"{$college->name}\"", $office);
+
         return redirect()->route('admin.offices.index', $college)->with('success', 'Office updated.');
     }
 
     public function destroy(College $college, Office $office)
     {
         abort_unless($office->college_id === $college->id, 404);
+        $name = $office->name;
         $office->delete();
+
+        ActivityLog::record('deleted', "Deleted office \"{$name}\" from \"{$college->name}\"");
+
         return back()->with('success', 'Office deleted.');
     }
 }

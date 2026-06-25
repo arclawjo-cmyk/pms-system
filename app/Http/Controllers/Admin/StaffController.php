@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\ActivityLog;
 use App\Models\Office;
 use App\Models\Staff;
 use Illuminate\Http\Request;
@@ -99,7 +100,7 @@ class StaffController extends Controller
             $data = $request->validateWithBag('add', $rules, $messages, $attributes);
 
             foreach ($data['staff'] as $row) {
-                Staff::create([
+                $staff = Staff::create([
                     'office_id' => $office->id,
                     'first_name' => $row['first_name'],
                     'last_name' => $row['last_name'],
@@ -108,6 +109,8 @@ class StaffController extends Controller
                     'phone' => $row['phone'] ?? null,
                     'is_active' => (bool) ($row['is_active'] ?? true),
                 ]);
+
+                ActivityLog::record('created', "Created staff \"{$staff->first_name} {$staff->last_name}\" in \"{$office->name}\" (bulk add)", $staff);
             }
 
             return back()->with('success', 'Staff created.');
@@ -128,7 +131,7 @@ class StaffController extends Controller
             'phone.regex' => $this->fieldMessages()['phone'],
         ]);
 
-        Staff::create([
+        $staff = Staff::create([
             'office_id' => $office->id,
             'first_name' => $data['first_name'],
             'last_name' => $data['last_name'],
@@ -137,6 +140,8 @@ class StaffController extends Controller
             'phone' => $data['phone'] ?? null,
             'is_active' => (bool) ($data['is_active'] ?? true),
         ]);
+
+        ActivityLog::record('created', "Created staff \"{$staff->first_name} {$staff->last_name}\" in \"{$office->name}\"", $staff);
 
         return back()->with('success', 'Staff created.');
     }
@@ -176,6 +181,8 @@ class StaffController extends Controller
             'is_active' => (bool) ($data['is_active'] ?? false),
         ]);
 
+        ActivityLog::record('updated', "Updated staff \"{$staff->first_name} {$staff->last_name}\" in \"{$office->name}\"", $staff);
+
         $office->load('college');
 
         return redirect()->route('admin.staff.index', $office)->with('success', 'Staff updated.');
@@ -184,7 +191,11 @@ class StaffController extends Controller
     public function destroy(Office $office, Staff $staff)
     {
         abort_unless($staff->office_id === $office->id, 404);
+        $name = "{$staff->first_name} {$staff->last_name}";
         $staff->delete();
+
+        ActivityLog::record('deleted', "Deleted staff \"{$name}\" from \"{$office->name}\"");
+
         return back()->with('success', 'Staff deleted.');
     }
 }

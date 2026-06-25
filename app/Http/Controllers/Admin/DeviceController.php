@@ -2,23 +2,26 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Exports\PreventiveMaintenanceReportExport;
+use App\Models\ActivityLog;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreDeviceRequest;
 use App\Http\Requests\UpdateDeviceRequest;
 use App\Models\Device;
-use App\Services\DeviceService;
+use App\Models\DeviceMaintenanceRecord;
+use App\Models\DeviceType;
+use App\Models\Office;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Maatwebsite\Excel\Facades\Excel;
+use SimpleSoftwareIO\QrCode\Facades\QrCode;
 
 class DeviceController extends Controller
 {
-    public function __construct(protected DeviceService $deviceService)
-    {
-    }
-
     public function index(Request $request)
     {
-        $q         = $request->string('q')->toString();
-        $typeId    = $request->integer('type');
+        $q = $request->string('q')->toString();
+        $typeId = $request->integer('type');
         $condition = $request->query('condition');
 
         if (! in_array($condition, ['serviceable', 'unserviceable'], true)) {
@@ -34,26 +37,36 @@ class DeviceController extends Controller
             ->when($q, function ($query) use ($q) {
                 return $query->where(function ($sub) use ($q) {
                     $sub->where('property_number', 'like', "%{$q}%")
-                        ->orWhere('serial_number',  'like', "%{$q}%")
-                        ->orWhere('brand',           'like', "%{$q}%")
-                        ->orWhere('model',           'like', "%{$q}%")
-                        ->orWhere('mac_address',     'like', "%{$q}%");
+                        ->orWhere('serial_number', 'like', "%{$q}%")
+                        ->orWhere('brand', 'like', "%{$q}%")
+                        ->orWhere('model', 'like', "%{$q}%")
+                        ->orWhere('mac_address', 'like', "%{$q}%");
                 });
             })
-            ->when($typeId, fn ($query) => $query->where('device_type_id', $typeId))
-            ->when($condition, fn ($query) => $query->where('condition', $condition))
+            ->when($typeId, function ($query) use ($typeId) {
+                return $query->where('device_type_id', $typeId);
+            })
+            ->when($condition, function ($query) use ($condition) {
+                return $query->where('condition', $condition);
+            })
             ->orderByDesc('id')
             ->paginate(15)
             ->withQueryString();
 
-        $types = $this->deviceService->allowedTypes();
+        $types = $this->allowedDeviceTypes();
 
-        return view('admin.devices.index', compact('devices', 'q', 'typeId', 'condition', 'types'));
+        return view('admin.devices.index', compact(
+            'devices',
+            'q',
+            'typeId',
+            'condition',
+            'types'
+        ));
     }
 
     public function create()
     {
-        $types = $this->deviceService->allowedTypes();
+        $types = $this->allowedDeviceTypes();
 
         return view('admin.devices.create', compact('types'));
     }
@@ -62,13 +75,34 @@ class DeviceController extends Controller
     {
         $data = $request->validated();
 
-        $data['status']    = 'available';
+        /*
+        |--------------------------------------------------------------------------
+        | Default Device Availability
+        |--------------------------------------------------------------------------
+        | Every newly added device is automatically available.
+        | Do not let the form decide this.
+        */
+        $data['status'] = 'available';
+
+        /*
+        |--------------------------------------------------------------------------
+        | Default Device Condition
+        |--------------------------------------------------------------------------
+        | Device condition is separate from availability.
+        | condition = serviceable / unserviceable
+        | status = available / issued / repair / retired
+        */
         $data['condition'] = $data['condition'] ?? 'serviceable';
-        $data              = $this->deviceService->cleanByType($data);
 
-        Device::create($data);
+        $data = $this->cleanDeviceDataByType($data);
 
-        return redirect()->back()->with('success', 'Device added successfully.');
+        $device = Device::create($data);
+
+        ActivityLog::record('created', "Added device \"{$device->property_number}\"", $device);
+
+        return redirect()
+            ->back()
+            ->with('success', 'Device added successfully.');
     }
 
     public function show(Device $device)
@@ -79,7 +113,7 @@ class DeviceController extends Controller
             'latestMaintenanceRecord',
         ]);
 
-        $types = $this->deviceService->allowedTypes();
+        $types = $this->allowedDeviceTypes();
 
         return view('admin.devices.show', compact('device', 'types'));
     }
@@ -88,7 +122,7 @@ class DeviceController extends Controller
     {
         $device->load('type');
 
-        $types = $this->deviceService->allowedTypes();
+        $types = $this->allowedDeviceTypes();
 
         return view('admin.devices.edit', compact('device', 'types'));
     }
@@ -97,21 +131,36 @@ class DeviceController extends Controller
     {
         $data = $request->validated();
 
+        /*
+        |--------------------------------------------------------------------------
+        | Keep existing status if not submitted
+        |--------------------------------------------------------------------------
+        | This prevents accidentally changing issued/available status from forms
+        | that do not include a status field.
+        */
         if (! array_key_exists('status', $data)) {
             unset($data['status']);
         }
 
         $data['condition'] = $data['condition'] ?? $device->condition ?? 'serviceable';
-        $data              = $this->deviceService->cleanByType($data);
+
+        $data = $this->cleanDeviceDataByType($data);
 
         $device->update($data);
 
-        return redirect()->route('admin.devices.index')->with('success', 'Device updated.');
+        ActivityLog::record('updated', "Updated device \"{$device->property_number}\"", $device);
+
+        return redirect()
+            ->route('admin.devices.index')
+            ->with('success', 'Device updated.');
     }
 
     public function destroy(Device $device)
     {
+        $propertyNumber = $device->property_number;
         $device->delete();
+
+        ActivityLog::record('deleted', "Deleted device \"{$propertyNumber}\"");
 
         return redirect()
             ->route('admin.devices.index')
@@ -181,6 +230,8 @@ class DeviceController extends Controller
 
         $device->update($data);
 
+        ActivityLog::record('updated', "Updated device \"{$device->property_number}\" (quick edit)", $device);
+
         return back()->with('success', 'Device updated.');
     }
 
@@ -214,6 +265,8 @@ class DeviceController extends Controller
             'last_maintenance_date' => $maintenanceDate,
             'maintenance_remarks' => $remarks,
         ]);
+
+        ActivityLog::record('updated', "Marked device \"{$device->property_number}\" as checked/maintained", $device);
 
         return redirect()
             ->route('admin.devices.show', $device->id)

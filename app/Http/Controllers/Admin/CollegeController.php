@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\ActivityLog;
 use App\Models\College;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -88,10 +89,12 @@ class CollegeController extends Controller
                 $code = $data['codes'][$i] ?? null;
                 $code = $code === '' ? null : $code;
 
-                College::create([
+                $college = College::create([
                     'name' => $data['names'][$i],
                     'code' => $code,
                 ]);
+
+                ActivityLog::record('created', "Created college \"{$college->name}\" (bulk add)", $college);
             }
 
             return redirect()->route('admin.colleges.index')->with('success', 'Colleges created.');
@@ -118,10 +121,12 @@ class CollegeController extends Controller
         $code = $data['code'] ?? null;
         $code = $code === '' ? null : $code;
 
-        College::create([
+        $college = College::create([
             'name' => $data['name'],
             'code' => $code,
         ]);
+
+        ActivityLog::record('created', "Created college \"{$college->name}\"", $college);
 
         return redirect()->route('admin.colleges.index')->with('success', 'College created.');
     }
@@ -156,12 +161,17 @@ class CollegeController extends Controller
             'code' => $code,
         ]);
 
+        ActivityLog::record('updated', "Updated college \"{$college->name}\"", $college);
+
         return redirect()->route('admin.colleges.index')->with('success', 'College updated.');
     }
 
     public function destroy(College $college)
     {
+        $name = $college->name;
         $college->delete();
+
+        ActivityLog::record('deleted', "Deleted college \"{$name}\"");
 
         return redirect()->route('admin.colleges.index')->with('success', 'College deleted.');
     }

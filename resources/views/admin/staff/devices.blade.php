@@ -277,13 +277,15 @@
                                 Edit
                             </button>
 
-                            <button
-                                type="button"
-                                class="rounded-lg bg-red-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-red-700"
-                                @click="openDelete({{ $dev->id }})"
-                            >
-                                Delete
-                            </button>
+                            @if(auth()->user()->isAdmin())
+                                <button
+                                    type="button"
+                                    class="rounded-lg bg-red-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-red-700"
+                                    @click="openDelete({{ $dev->id }})"
+                                >
+                                    Delete
+                                </button>
+                            @endif
                         </div>
                     </div>
                 </div>
@@ -418,13 +420,15 @@
                                             Edit
                                         </button>
 
-                                        <button
-                                            type="button"
-                                            class="rounded-lg bg-red-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-red-700"
-                                            @click="openDelete({{ $dev->id }})"
-                                        >
-                                            Delete
-                                        </button>
+                                        @if(auth()->user()->isAdmin())
+                                            <button
+                                                type="button"
+                                                class="rounded-lg bg-red-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-red-700"
+                                                @click="openDelete({{ $dev->id }})"
+                                            >
+                                                Delete
+                                            </button>
+                                        @endif
                                     </div>
                                 </td>
                             </tr>
@@ -647,9 +651,10 @@
                 <div x-show="isComputerType(editDevice.type_name)" x-cloak>
                     <label class="text-sm font-medium">Operating System</label>
                     <input
-                        name="specs[os_version]"
+                        name="specs[os]"
                         class="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2"
-                        x-model="editDevice.specs.os_version"
+                        x-model="editDevice.specs.os"
+                        maxlength="100"
                         :disabled="!isComputerType(editDevice.type_name)"
                     >
                 </div>

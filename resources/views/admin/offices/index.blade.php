@@ -99,13 +99,15 @@ document.addEventListener('alpine:init', () => {
             <h1 class="text-2xl font-semibold text-gray-900">Offices in {{ $college->name }}</h1>
         </div>
 
-        <button
-            type="button"
-            class="shrink-0 inline-flex items-center rounded-xl bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700"
-            @click="openAdd()"
-        >
-            + Add Office
-        </button>
+        @if(auth()->user()->isAdmin())
+            <button
+                type="button"
+                class="shrink-0 inline-flex items-center rounded-xl bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700"
+                @click="openAdd()"
+            >
+                + Add Office
+            </button>
+        @endif
     </div>
 
     {{-- Mobile cards --}}
@@ -123,24 +125,26 @@ document.addEventListener('alpine:init', () => {
                     </div>
 
                     <div class="flex flex-wrap gap-2 pt-1">
-                        <button
-                            type="button"
-                            class="rounded-lg bg-gray-900 px-3 py-1.5 text-sm font-medium text-white hover:bg-black"
-                            @click="openEdit({
-                                id: {{ $o->id }},
-                                name: @js($o->name)
-                            })"
-                        >
-                            Edit
-                        </button>
+                        @if(auth()->user()->isAdmin())
+                            <button
+                                type="button"
+                                class="rounded-lg bg-gray-900 px-3 py-1.5 text-sm font-medium text-white hover:bg-black"
+                                @click="openEdit({
+                                    id: {{ $o->id }},
+                                    name: @js($o->name)
+                                })"
+                            >
+                                Edit
+                            </button>
 
-                        <button
-                            type="button"
-                            class="rounded-lg bg-red-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-red-700"
-                            @click="openDelete({{ $o->id }})"
-                        >
-                            Delete
-                        </button>
+                            <button
+                                type="button"
+                                class="rounded-lg bg-red-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-red-700"
+                                @click="openDelete({{ $o->id }})"
+                            >
+                                Delete
+                            </button>
+                        @endif
                     </div>
                 </div>
             </div>
@@ -175,24 +179,28 @@ document.addEventListener('alpine:init', () => {
 
                             <td class="px-4 py-3 whitespace-nowrap">
                                 <div class="flex items-center gap-2">
-                                    <button
-                                        type="button"
-                                        class="rounded-lg bg-gray-900 px-3 py-1.5 text-sm font-medium text-white hover:bg-black"
-                                        @click="openEdit({
-                                            id: {{ $o->id }},
-                                            name: @js($o->name)
-                                        })"
-                                    >
-                                        Edit
-                                    </button>
+                                    @if(auth()->user()->isAdmin())
+                                        <button
+                                            type="button"
+                                            class="rounded-lg bg-gray-900 px-3 py-1.5 text-sm font-medium text-white hover:bg-black"
+                                            @click="openEdit({
+                                                id: {{ $o->id }},
+                                                name: @js($o->name)
+                                            })"
+                                        >
+                                            Edit
+                                        </button>
 
-                                    <button
-                                        type="button"
-                                        class="rounded-lg bg-red-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-red-700"
-                                        @click="openDelete({{ $o->id }})"
-                                    >
-                                        Delete
-                                    </button>
+                                        <button
+                                            type="button"
+                                            class="rounded-lg bg-red-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-red-700"
+                                            @click="openDelete({{ $o->id }})"
+                                        >
+                                            Delete
+                                        </button>
+                                    @else
+                                        <span class="text-xs text-gray-400">View only</span>
+                                    @endif
                                 </div>
                             </td>
                         </tr>
