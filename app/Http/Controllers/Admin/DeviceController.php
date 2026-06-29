@@ -10,6 +10,7 @@ use App\Http\Requests\UpdateDeviceRequest;
 use App\Models\Device;
 use App\Models\DeviceMaintenanceRecord;
 use App\Models\DeviceType;
+use App\Models\College;
 use App\Models\Office;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -22,16 +23,17 @@ class DeviceController extends Controller
     {
         $q = $request->string('q')->toString();
         $typeId = $request->integer('type');
+        $collegeId = $request->integer('college');
         $condition = $request->query('condition');
 
-        if (! in_array($condition, ['serviceable', 'unserviceable'], true)) {
+        if (!in_array($condition, ['serviceable', 'unserviceable'], true)) {
             $condition = null;
         }
 
         $devices = Device::query()
             ->with([
                 'type',
-                'currentAssignment.staff',
+                'currentAssignment.staff.office.college',
                 'latestMaintenanceRecord',
             ])
             ->when($q, function ($query) use ($q) {
@@ -46,6 +48,11 @@ class DeviceController extends Controller
             ->when($typeId, function ($query) use ($typeId) {
                 return $query->where('device_type_id', $typeId);
             })
+            ->when($collegeId, function ($query) use ($collegeId) {
+                return $query->whereHas('currentAssignment.staff.office', function ($office) use ($collegeId) {
+                    $office->where('college_id', $collegeId);
+                });
+            })
             ->when($condition, function ($query) use ($condition) {
                 return $query->where('condition', $condition);
             })
@@ -54,13 +61,16 @@ class DeviceController extends Controller
             ->withQueryString();
 
         $types = $this->allowedDeviceTypes();
+        $colleges = College::orderBy('name')->get();
 
         return view('admin.devices.index', compact(
             'devices',
             'q',
             'typeId',
+            'collegeId',
             'condition',
-            'types'
+            'types',
+            'colleges'
         ));
     }
 
@@ -138,7 +148,7 @@ class DeviceController extends Controller
         | This prevents accidentally changing issued/available status from forms
         | that do not include a status field.
         */
-        if (! array_key_exists('status', $data)) {
+        if (!array_key_exists('status', $data)) {
             unset($data['status']);
         }
 
@@ -222,7 +232,7 @@ class DeviceController extends Controller
         $data['device_type_id'] = $data['device_type_id'] ?? $device->device_type_id;
         $data['condition'] = $data['condition'] ?? $device->condition ?? 'serviceable';
 
-        if (! array_key_exists('status', $data)) {
+        if (!array_key_exists('status', $data)) {
             unset($data['status']);
         }
 
@@ -333,7 +343,7 @@ class DeviceController extends Controller
 
         $isComputerType = in_array($typeName, ['desktop', 'laptop']);
 
-        if (! $isComputerType) {
+        if (!$isComputerType) {
             $data['mac_address'] = null;
 
             $data['specs'] = collect($data['specs'] ?? [])
@@ -352,7 +362,7 @@ class DeviceController extends Controller
 
         if ($isComputerType) {
             $data['specs'] = collect($data['specs'] ?? [])
-                ->filter(fn ($value) => filled($value))
+                ->filter(fn($value) => filled($value))
                 ->toArray();
 
             if (empty($data['specs'])) {
