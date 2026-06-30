@@ -20,6 +20,7 @@
             device_type_id: '',
             property_number: '',
             serial_number: '',
+            computer_name: '',
             brand: '',
             model: '',
             mac_address: '',
@@ -56,6 +57,7 @@
             device.specs.storage = device.specs.storage ?? '';
             device.specs.form_factor = device.specs.form_factor ?? '';
             device.serial_number = device.serial_number ?? '';
+            device.computer_name = device.computer_name ?? '';
             device.status = device.status ?? 'available';
             device.condition = device.condition ?? 'serviceable';
 
@@ -201,6 +203,11 @@
                         </div>
 
                         <div>
+                            <div class="text-gray-500">Computer Name</div>
+                            <div class="text-gray-900">{{ $d->computer_name ?: '-' }}</div>
+                        </div>
+
+                        <div>
                             <div class="text-gray-500">Acquired</div>
                             <div class="text-gray-900">
                                 {{ $d->date_acquired ? $d->date_acquired->format('M d, Y') : '-' }}
@@ -296,6 +303,7 @@
                                 device_type_id: '{{ $d->device_type_id }}',
                                 property_number: @js($d->property_number),
                                 serial_number: @js($d->serial_number ?? ''),
+                                computer_name: @js($d->computer_name ?? ''),
                                 brand: @js($d->brand ?? ''),
                                 model: @js($d->model ?? ''),
                                 mac_address: @js($d->mac_address ?? ''),
@@ -429,6 +437,7 @@
                                             device_type_id: '{{ $d->device_type_id }}',
                                             property_number: @js($d->property_number),
                                             serial_number: @js($d->serial_number ?? ''),
+                                            computer_name: @js($d->computer_name ?? ''),
                                             brand: @js($d->brand ?? ''),
                                             model: @js($d->model ?? ''),
                                             mac_address: @js($d->mac_address ?? ''),
@@ -526,6 +535,19 @@
                         pattern="[A-Za-z0-9\-]*"
                         title="Letters, numbers, and hyphens only"
                         placeholder="Enter serial number"
+                    >
+                </div>
+
+                 <div>
+                    <label class="text-sm font-medium">Computer Name</label>
+                    <input
+                        name="computer_name"
+                        value="{{ old('computer_name') }}"
+                        class="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2"
+                        maxlength="100"
+                        pattern="[A-Za-z0-9][A-Za-z0-9\-\s]*"
+                        title="Letters, numbers, hyphens, and spaces only"
+                        placeholder="Enter computer name"
                     >
                 </div>
 
@@ -793,6 +815,19 @@
                         pattern="[A-Za-z0-9\-]*"
                         title="Letters, numbers, and hyphens only"
                         placeholder="Enter serial number"
+                    >
+                </div>
+
+                <div>
+                    <label class="text-sm font-medium">Computer Name</label>
+                    <input
+                        name="computer_name"
+                        class="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2"
+                        x-model="editDevice.computer_name"
+                        maxlength="100"
+                        pattern="[A-Za-z0-9][A-Za-z0-9\-\s]*"
+                        title="Letters, numbers, hyphens, and spaces only"
+                        placeholder="Enter computer name"
                     >
                 </div>
 
@@ -1142,4 +1177,3 @@
 </script>
 @endpush
 @endsection
-

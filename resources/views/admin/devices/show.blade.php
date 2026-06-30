@@ -124,6 +124,13 @@
                 </div>
 
                 <div>
+                    <div class="text-sm text-gray-500">Computer Name</div>
+                    <div class="font-medium text-gray-900">
+                        {{ $device->computer_name ?: '-' }}
+                    </div>
+                </div>
+
+                <div>
                     <div class="text-sm text-gray-500">Brand</div>
                     <div class="font-medium text-gray-900">
                         {{ $device->brand ?: '-' }}
@@ -324,6 +331,19 @@
                         pattern="[A-Za-z0-9\-]*"
                         title="Letters, numbers, and hyphens only"
                         placeholder="Enter serial number"
+                    >
+                </div>
+
+                <div>
+                    <label class="text-sm font-medium">Computer Name</label>
+                    <input
+                        name="computer_name"
+                        value="{{ old('computer_name', $device->computer_name) }}"
+                        class="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2"
+                        maxlength="100"
+                        pattern="[A-Za-z0-9][A-Za-z0-9\-\s]*"
+                        title="Letters, numbers, hyphens, and spaces only"
+                        placeholder="Enter computer name"
                     >
                 </div>
 
